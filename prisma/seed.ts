@@ -61,7 +61,9 @@ const phdFields: SeedField[] = [
   // QR square. `diplomaSummary` is not a Student column — it is composed in lib/diploma.ts
   // (SUMMARY_SOURCE) from the Latin fields, mirroring the label order the ministry uses in
   // the licence diploma's QR, so a scan reads the same on both. Positioned bottom-left.
-  { key: "qr_registration", source: "diplomaSummary", label: "QR code (diploma summary)", xMm: 20, yMm: 150, widthMm: 22, fontSize: 9, kind: "qr", order: 19, ...LATIN },
+  // 26 mm: the summary payload is ~220 characters, so the code is dense — at the old 22 mm
+  // the modules land near the limit of what a phone camera resolves off paper.
+  { key: "qr_registration", source: "diplomaSummary", label: "QR code (diploma summary)", xMm: 20, yMm: 150, widthMm: 26, fontSize: 9, kind: "qr", order: 19, ...LATIN },
 ];
 
 async function main() {

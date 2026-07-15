@@ -26,6 +26,7 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
     key: f.key,
     label: f.label,
     source: f.source,
+    kind: f.kind,
     lang: f.lang,
     xMm: f.xMm,
     yMm: f.yMm,

@@ -10,6 +10,7 @@ export type CalibratorField = {
   key: string;
   label: string;
   source: string | null;
+  kind: string; // "text" | "qr"
   lang: string;
   xMm: number;
   yMm: number;
@@ -201,28 +202,46 @@ export function Calibrator({
             )}
             {visibleFields.map((f) => {
               const isSel = f.id === selectedId;
+              const isQr = f.kind === "qr";
               const text = f.sampleValue || f.label;
               return (
                 <div
                   key={f.id}
                   onPointerDown={(e) => onPointerDown(e, f)}
-                  className={`absolute cursor-move overflow-hidden whitespace-nowrap ${
+                  className={`absolute cursor-move overflow-hidden ${isQr ? "" : "whitespace-nowrap"} ${
                     isSel ? "ring-2 ring-indigo-500" : "ring-1 ring-slate-300/60"
                   } ${f.printable ? "" : "opacity-50"}`}
                   style={{
                     left: f.xMm * scale,
                     top: f.yMm * scale,
                     width: f.widthMm * scale,
-                    fontSize: f.fontSize * PT_TO_MM * scale,
-                    fontFamily: f.fontFamily === "arabic" ? "var(--font-arabic)" : "Georgia, serif",
-                    direction: f.direction,
-                    textAlign: f.align,
-                    lineHeight: 1.1,
+                    // A QR prints as a square of widthMm — show it as one, or its printed
+                    // size is invisible here and it can only be sized by trial and error.
+                    ...(isQr
+                      ? { height: f.widthMm * scale, display: "grid", placeItems: "center" }
+                      : {
+                          fontSize: f.fontSize * PT_TO_MM * scale,
+                          fontFamily: f.fontFamily === "arabic" ? "var(--font-arabic)" : "Georgia, serif",
+                          direction: f.direction,
+                          textAlign: f.align,
+                          lineHeight: 1.1,
+                        }),
                     backgroundColor: isSel ? "rgba(99,102,241,0.10)" : "rgba(0,0,0,0.02)",
                   }}
-                  title={f.label}
+                  title={isQr ? `${f.label} — ${f.widthMm} mm square` : f.label}
                 >
-                  {text}
+                  {isQr ? (
+                    <span
+                      className="pointer-events-none select-none text-center font-medium text-slate-500"
+                      style={{ fontSize: Math.max(8, Math.min(14, f.widthMm * scale * 0.12)) }}
+                    >
+                      QR
+                      <br />
+                      {f.widthMm} mm
+                    </span>
+                  ) : (
+                    text
+                  )}
                 </div>
               );
             })}
@@ -290,9 +309,23 @@ export function Calibrator({
             <div className="grid grid-cols-2 gap-2">
               <NumberField label="X (mm)" value={selected.xMm} onChange={(v) => updateField(selected.id, { xMm: v })} />
               <NumberField label="Y (mm)" value={selected.yMm} onChange={(v) => updateField(selected.id, { yMm: v })} />
-              <NumberField label="Width (mm)" value={selected.widthMm} onChange={(v) => updateField(selected.id, { widthMm: v })} />
-              <NumberField label="Font (pt)" value={selected.fontSize} onChange={(v) => updateField(selected.id, { fontSize: v })} />
+              <NumberField
+                label={selected.kind === "qr" ? "Size (mm)" : "Width (mm)"}
+                value={selected.widthMm}
+                onChange={(v) => updateField(selected.id, { widthMm: v })}
+              />
+              {selected.kind !== "qr" && (
+                <NumberField label="Font (pt)" value={selected.fontSize} onChange={(v) => updateField(selected.id, { fontSize: v })} />
+              )}
             </div>
+
+            {selected.kind === "qr" && (
+              <p className="mt-2 rounded bg-slate-50 px-2 py-1 text-xs text-slate-500">
+                Prints as a {selected.widthMm} mm square. The code holds the whole diploma summary, so it is dense —
+                much under 20 mm and phone cameras start to struggle. Around 25–30 mm matches the licence diploma.
+                Scan a test print before a real run.
+              </p>
+            )}
 
             <div className="mt-2 flex items-center justify-center gap-1">
               <span className="mr-2 text-xs text-slate-500">Nudge:</span>
