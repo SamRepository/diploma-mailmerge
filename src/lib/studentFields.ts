@@ -56,7 +56,9 @@ export const STUDENT_FIELDS: StudentFieldDef[] = [
   // PV date must be listed BEFORE issueDate: the ministry's PV header ends in "بتاريخ",
   // which is also issueDate's alias, so PV has to claim its column first (the import
   // mapper skips headers already taken) or the issue date would silently take it.
-  { key: "pvDate", label: "PV date", arabic: false, required: false, group: "Issuance", aliases: ["محضر لجنة المداولات بتاريخ", "محضر لجنة المداولات", "محضر", "pv date", "proces verbal", "procès-verbal", "deliberation"] },
+  // "تاريخ المناقشة" (defense date) is the header the ministry uses in place of the PV
+  // column in some exports; it does not contain "بتاريخ", so it cannot collide with issueDate.
+  { key: "pvDate", label: "PV date", arabic: false, required: false, group: "Issuance", aliases: ["محضر لجنة المداولات بتاريخ", "محضر لجنة المداولات", "محضر", "تاريخ المناقشة", "pv date", "proces verbal", "procès-verbal", "deliberation"] },
   { key: "issueDate", label: "Issue date", arabic: false, required: false, group: "Issuance", aliases: ["بتاريخ", "issue date", "date de delivrance", "delivered"] },
   { key: "serialNumber", label: "Serial N° (pre-printed)", arabic: false, required: false, group: "Issuance", aliases: ["serial", "n°", "numero"] },
   { key: "registrationCode", label: "Registration N° (printed)", arabic: false, required: false, group: "Issuance", aliases: ["تحت رقم", "registration", "matricule", "reference"] },

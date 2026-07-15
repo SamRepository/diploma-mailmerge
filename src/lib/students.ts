@@ -94,34 +94,100 @@ export async function deleteStudent(formData: FormData): Promise<void> {
 // Bulk import: rows already mapped client-side to student field keys.
 const importRowSchema = z.record(z.string(), z.union([z.string(), z.number(), z.null()]));
 
-export async function importStudents(rows: unknown): Promise<{ inserted: number; skipped: number; error?: string }> {
+// "update" matches each row against an existing student and edits it in place; "insert"
+// adds every row as a new student. Update is the default: the ministry re-sends the whole
+// cohort when it corrects a few cells, so inserting would duplicate the entire list.
+export type ImportMode = "insert" | "update";
+const importModeSchema = z.enum(["insert", "update"]);
+
+export type ImportResult = {
+  inserted: number;
+  updated: number;
+  skipped: number;
+  conflicts: string[];
+  error?: string;
+};
+
+// Match key for an existing student. Case- and whitespace-insensitive so that a re-export
+// with cosmetic spacing changes ("CHEBOUKI  Sonia") still matches the stored row.
+function matchKey(nameLatin: string): string {
+  return nameLatin.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export async function importStudents(rows: unknown, mode: ImportMode = "update"): Promise<ImportResult> {
   const user = await requireUser();
+  const empty = { inserted: 0, updated: 0, skipped: 0, conflicts: [] };
   const parsed = z.array(importRowSchema).safeParse(rows);
-  if (!parsed.success) return { inserted: 0, skipped: 0, error: "Malformed import payload" };
+  if (!parsed.success) return { ...empty, error: "Malformed import payload" };
+  const parsedMode = importModeSchema.safeParse(mode);
+  if (!parsedMode.success) return { ...empty, error: "Invalid import mode" };
 
   const templateId = await defaultTemplateId();
+
+  // Index existing students by match key. A Latin name that is not unique cannot be matched
+  // safely, so it maps to null and is reported as a conflict rather than updating a guess.
+  const index = new Map<string, string | null>();
+  if (parsedMode.data === "update") {
+    for (const s of await prisma.student.findMany({ select: { id: true, nameLatin: true } })) {
+      const k = matchKey(s.nameLatin);
+      index.set(k, index.has(k) ? null : s.id);
+    }
+  }
+
   let inserted = 0;
+  let updated = 0;
   let skipped = 0;
+  const conflicts: string[] = [];
+  const auditRows: { userId: string; studentId: string; action: string; detail: string }[] = [];
 
   for (const raw of parsed.data) {
-    const data: Record<string, string | null> = {};
+    // Only fields the file actually carries. A column the export omits (or leaves blank)
+    // must never null out data already in the DB — the pre-printed serial N° and any
+    // hand-entered correction live only here.
+    const values: Record<string, string> = {};
     for (const f of STUDENT_FIELDS) {
       const v = raw[f.key as StudentFieldKey];
-      data[f.key] = v == null || String(v).trim() === "" ? null : String(v).trim();
+      const s = v == null ? "" : String(v).trim();
+      if (s) values[f.key] = s;
     }
-    if (!data.nameLatin) {
+    const nameLatin = values.nameLatin;
+    if (!nameLatin) {
       skipped++;
       continue;
     }
-    await prisma.student.create({ data: { ...(data as Record<string, string | null>), nameLatin: data.nameLatin, templateId } });
-    inserted++;
+
+    const existingId = parsedMode.data === "update" ? index.get(matchKey(nameLatin)) : undefined;
+    if (existingId === null) {
+      conflicts.push(nameLatin);
+      skipped++;
+      continue;
+    }
+
+    if (existingId) {
+      await prisma.student.update({ where: { id: existingId }, data: values });
+      auditRows.push({
+        userId: user.id,
+        studentId: existingId,
+        action: "STUDENT_UPDATE",
+        detail: `import: ${Object.keys(values).join(", ")}`,
+      });
+      updated++;
+    } else {
+      await prisma.student.create({ data: { ...values, nameLatin, templateId } });
+      inserted++;
+    }
   }
 
+  if (auditRows.length) await prisma.auditLog.createMany({ data: auditRows });
   await prisma.auditLog.create({
-    data: { userId: user.id, action: "STUDENT_IMPORT", detail: `inserted=${inserted} skipped=${skipped}` },
+    data: {
+      userId: user.id,
+      action: "STUDENT_IMPORT",
+      detail: `mode=${parsedMode.data} inserted=${inserted} updated=${updated} skipped=${skipped}`,
+    },
   });
   revalidatePath("/students");
-  return { inserted, skipped };
+  return { inserted, updated, skipped, conflicts };
 }
 
 export async function setManyPrintStatus(ids: string[], status: "PENDING" | "PRINTED"): Promise<{ count: number }> {

@@ -6,6 +6,7 @@ import { STUDENT_FIELDS, guessHeader } from "@/lib/studentFields";
 import { importStudents } from "@/lib/students";
 
 type Row = Record<string, string>;
+type Mode = "insert" | "update";
 
 // Format a raw spreadsheet cell to a trimmed string. Real date cells (parsed via
 // cellDates) are rendered as dd/mm/yyyy to match the diploma's printed format,
@@ -28,6 +29,7 @@ export function Importer() {
   const [rows, setRows] = useState<Row[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [guessed, setGuessed] = useState<Record<string, boolean>>({});
+  const [mode, setMode] = useState<Mode>("update");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,11 +104,18 @@ export function Importer() {
         }
         return out;
       });
-      const res = await importStudents(mapped);
+      const res = await importStudents(mapped, mode);
       if (res.error) {
         setError(res.error);
       } else {
-        setResult(`Imported ${res.inserted} students (${res.skipped} skipped — missing name).`);
+        const parts = [`${res.updated} updated`, `${res.inserted} added`];
+        if (res.skipped) parts.push(`${res.skipped} skipped`);
+        setResult(
+          `Import complete: ${parts.join(", ")}.` +
+            (res.conflicts.length
+              ? ` Not matched — the same Latin name appears more than once, edit these by hand: ${res.conflicts.join("; ")}.`
+              : ""),
+        );
         setRows([]);
         setHeaders([]);
         router.refresh();
@@ -193,12 +202,55 @@ export function Importer() {
             </table>
           </div>
 
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <h2 className="mb-3 font-medium text-slate-900">How to apply these rows</h2>
+            <div className="space-y-2 text-sm">
+              <label className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  name="mode"
+                  className="mt-1"
+                  checked={mode === "update"}
+                  onChange={() => setMode("update")}
+                />
+                <span>
+                  <span className="font-medium text-slate-800">Update existing students</span>
+                  <span className="block text-xs text-slate-500">
+                    Matches each row to a student by Name (Latin) and edits it in place; unmatched rows are
+                    added. Blank and unmapped columns keep their current value, so the pre-printed serial N°
+                    and any hand-entered corrections survive. Use this for a corrected re-export.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  name="mode"
+                  className="mt-1"
+                  checked={mode === "insert"}
+                  onChange={() => setMode("insert")}
+                />
+                <span>
+                  <span className="font-medium text-slate-800">Add all as new students</span>
+                  <span className="block text-xs text-slate-500">
+                    Every row becomes a new record. Use this for a genuinely new cohort — on a re-export it
+                    will duplicate students you already have.
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
+
           <button
             onClick={onImport}
             disabled={busy}
             className="rounded bg-indigo-600 px-5 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {busy ? "Importing…" : `Import ${rows.length} students`}
+            {busy
+              ? "Importing…"
+              : mode === "update"
+                ? `Update from ${rows.length} rows`
+                : `Add ${rows.length} new students`}
           </button>
         </>
       )}
