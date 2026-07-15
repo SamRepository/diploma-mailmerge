@@ -47,6 +47,21 @@ export async function uploadBackground(_prev: UploadState, formData: FormData): 
   return { status: "ok", message: `Uploaded ${file.name} (${mb} MB).` };
 }
 
+export async function deleteFieldDefinition(
+  templateId: string,
+  fieldId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  await requireAdmin();
+  const field = await prisma.fieldDefinition.findUnique({ where: { id: fieldId } });
+  if (!field || field.templateId !== templateId) {
+    return { ok: false, error: "That field no longer exists." };
+  }
+
+  await prisma.fieldDefinition.delete({ where: { id: fieldId } });
+  revalidatePath(`/templates/${templateId}/calibrate`);
+  return { ok: true };
+}
+
 const fieldUpdateSchema = z.object({
   id: z.string(),
   xMm: z.number(),

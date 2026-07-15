@@ -19,6 +19,7 @@ export type StudentFieldKey =
   | "centerArabic"
   | "issuePlace"
   | "issueDate"
+  | "pvDate"
   | "serialNumber"
   | "registrationCode";
 
@@ -52,6 +53,10 @@ export const STUDENT_FIELDS: StudentFieldDef[] = [
   { key: "centerLatin", label: "Center (Latin)", arabic: false, required: false, group: "Issuance", aliases: ["المؤسسة الجامعية بالأنجليزية", "center", "centre", "institution", "university"] },
   { key: "centerArabic", label: "Center (Arabic)", arabic: true, required: false, group: "Issuance", aliases: ["المؤسسة الجامعية"] },
   { key: "issuePlace", label: "Issue place", arabic: false, required: false, group: "Issuance", aliases: ["حرر في", "issue place", "lieu de delivrance", "place issued"] },
+  // PV date must be listed BEFORE issueDate: the ministry's PV header ends in "بتاريخ",
+  // which is also issueDate's alias, so PV has to claim its column first (the import
+  // mapper skips headers already taken) or the issue date would silently take it.
+  { key: "pvDate", label: "PV date", arabic: false, required: false, group: "Issuance", aliases: ["محضر لجنة المداولات بتاريخ", "محضر لجنة المداولات", "محضر", "pv date", "proces verbal", "procès-verbal", "deliberation"] },
   { key: "issueDate", label: "Issue date", arabic: false, required: false, group: "Issuance", aliases: ["بتاريخ", "issue date", "date de delivrance", "delivered"] },
   { key: "serialNumber", label: "Serial N° (pre-printed)", arabic: false, required: false, group: "Issuance", aliases: ["serial", "n°", "numero"] },
   { key: "registrationCode", label: "Registration N° (printed)", arabic: false, required: false, group: "Issuance", aliases: ["تحت رقم", "registration", "matricule", "reference"] },

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
-import { saveFieldPositions } from "@/lib/templates";
+import { useRef, useState, useCallback, useEffect } from "react";
+import { saveFieldPositions, deleteFieldDefinition } from "@/lib/templates";
 
 const PT_TO_MM = 25.4 / 72;
 
@@ -43,6 +43,7 @@ export function Calibrator({
   const [onlyPrintable, setOnlyPrintable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<{ id: string; startX: number; startY: number; origXMm: number; origYMm: number } | null>(null);
@@ -88,6 +89,44 @@ export function Calibrator({
       yMm: round1(Math.max(0, Math.min(pageHeightMm, selected.yMm + dy))),
     });
   }
+
+  const removeSelected = useCallback(async () => {
+    const target = fields.find((f) => f.id === selectedId);
+    if (!target) return;
+    if (!window.confirm(`Delete the field “${target.label}”?\n\nThis removes it from the template permanently. Re-run the seed to restore the standard fields.`)) {
+      return;
+    }
+
+    setDeleteError(null);
+    const res = await deleteFieldDefinition(templateId, target.id);
+    if (!res.ok) {
+      setDeleteError(res.error ?? "Could not delete that field.");
+      return;
+    }
+    setFields((prev) => {
+      const next = prev.filter((f) => f.id !== target.id);
+      setSelectedId(next[0]?.id ?? null);
+      return next;
+    });
+  }, [fields, selectedId, templateId]);
+
+  // Del / Backspace removes the selected field. Ignored while a form control has focus,
+  // so editing the fixed-value or a number input never deletes the field being edited.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const el = document.activeElement;
+      const tag = el?.tagName.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select" || (el as HTMLElement | null)?.isContentEditable) {
+        return;
+      }
+      if (!selectedId) return;
+      e.preventDefault();
+      void removeSelected();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedId, removeSelected]);
 
   async function onSave() {
     setSaving(true);
@@ -171,9 +210,15 @@ export function Calibrator({
           </div>
         </div>
         <p className="text-xs text-slate-500">
-          Drag a field to position it. Boxes at 50% opacity are marked non-printable (pre-printed on the paper).
+          Drag a field to position it. Press <kbd className="rounded border border-slate-300 bg-slate-50 px-1">Del</kbd> to
+          remove the selected field. Boxes at 50% opacity are marked non-printable (pre-printed on the paper).
           Sample text is from the first imported student.
         </p>
+        {deleteError && (
+          <p role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {deleteError}
+          </p>
+        )}
       </div>
 
       {/* Property panel */}
@@ -245,6 +290,14 @@ export function Calibrator({
               <input type="checkbox" checked={selected.printable} onChange={(e) => updateField(selected.id, { printable: e.target.checked })} />
               <span>Printable (uncheck if pre-printed on the paper)</span>
             </label>
+
+            <button
+              type="button"
+              onClick={() => void removeSelected()}
+              className="mt-3 w-full rounded border border-red-300 px-2 py-1 text-sm text-red-700 hover:bg-red-50"
+            >
+              Delete field (Del)
+            </button>
           </div>
         )}
       </div>

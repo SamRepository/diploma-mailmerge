@@ -9,13 +9,50 @@ export function mmToPx(mm: number): number {
   return mm * PX_PER_MM;
 }
 
+// Student properties that hold a date. Dates are stored as free text (the import writes
+// dd/mm/yyyy) so they are normalised for printing here rather than in the database — the
+// stored value stays untouched and re-formatting never needs a migration.
+const DATE_SOURCES = new Set(["birthDate", "issueDate", "pvDate"]);
+
+// Print dates as YYYY/MM/DD with Western digits on both the Latin and Arabic sides.
+// Accepts what the app can actually hold: dd/mm/yyyy (the importer's output), yyyy-mm-dd
+// or yyyy/mm/dd (already ordered), and dd-mm-yyyy. Anything else is returned UNCHANGED —
+// a date we cannot read confidently must print as typed rather than be mangled, since a
+// wrong date on an official diploma is worse than an inconsistent one.
+export function formatDiplomaDate(raw: string): string {
+  const s = raw.trim();
+  if (s === "") return s;
+
+  const parts = s.split(/[/\-.]/).map((p) => p.trim());
+  if (parts.length !== 3 || parts.some((p) => !/^\d+$/.test(p))) return raw;
+
+  let year: string, month: string, day: string;
+  if (parts[0].length === 4) {
+    [year, month, day] = parts; // yyyy/mm/dd
+  } else if (parts[2].length === 4) {
+    [day, month, year] = parts; // dd/mm/yyyy
+  } else {
+    return raw; // two-digit year — ambiguous century, leave it alone
+  }
+
+  const y = Number(year);
+  const m = Number(month);
+  const d = Number(day);
+  if (m < 1 || m > 12 || d < 1 || d > 31 || y < 1900 || y > 2200) return raw;
+
+  return `${String(y)}/${String(m).padStart(2, "0")}/${String(d).padStart(2, "0")}`;
+}
+
 // Resolve the text a field should display for a given student.
 // Fixed-value fields (e.g. "Doctorat") ignore the student.
 export function resolveFieldValue(field: FieldDefinition, student: Student | null): string {
   if (field.fixedValue && field.fixedValue.trim() !== "") return field.fixedValue;
   if (student && field.source) {
     const v = (student as unknown as Record<string, unknown>)[field.source];
-    if (v != null) return String(v);
+    if (v != null) {
+      const text = String(v);
+      return DATE_SOURCES.has(field.source) ? formatDiplomaDate(text) : text;
+    }
   }
   return "";
 }

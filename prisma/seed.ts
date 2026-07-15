@@ -46,6 +46,14 @@ const phdFields: SeedField[] = [
   { key: "center_ar", source: "centerArabic", label: "Center (Arabic)", xMm: 190, yMm: 132, widthMm: 90, fontSize: 11, order: 15, ...ARABIC },
   { key: "issue_date", source: "issueDate", label: "Issue date", xMm: 150, yMm: 145, widthMm: 40, fontSize: 10, order: 16, ...LATIN },
   { key: "registration_code", source: "registrationCode", label: "Registration code", xMm: 30, yMm: 175, widthMm: 80, fontSize: 9, order: 17, ...LATIN },
+  // Issued-at city. Constant for every PhD diploma, so it carries a fixedValue and has no
+  // student source. Edit it in the calibrator if the issuing town ever changes.
+  { key: "issue_place_ar", source: null, fixedValue: "عزابة", label: "Issued at (Arabic)", xMm: 210, yMm: 145, widthMm: 30, fontSize: 10, order: 20, ...ARABIC },
+  // Issue date on the Arabic side, pairing the existing Latin issue_date.
+  { key: "issue_date_ar", source: "issueDate", label: "Issue date (Arabic)", xMm: 175, yMm: 145, widthMm: 32, fontSize: 10, order: 21, ...ARABIC },
+  // محضر لجنة المداولات بتاريخ — deliberation-committee minutes date.
+  { key: "pv_date_latin", source: "pvDate", label: "PV date (Latin)", xMm: 150, yMm: 152, widthMm: 40, fontSize: 10, order: 22, ...LATIN },
+  { key: "pv_date_ar", source: "pvDate", label: "PV date (Arabic)", xMm: 175, yMm: 152, widthMm: 32, fontSize: 10, order: 23, ...ARABIC },
   // QR square encoding the registration number by default (change its source/fixed value
   // once the ministry verification format is confirmed). Positioned bottom-left.
   { key: "qr_registration", source: "registrationCode", label: "QR code", xMm: 20, yMm: 150, widthMm: 22, fontSize: 9, kind: "qr", order: 19, ...LATIN },

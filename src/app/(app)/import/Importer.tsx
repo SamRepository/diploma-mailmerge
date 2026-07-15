@@ -57,11 +57,16 @@ export function Importer() {
         if (Object.values(row).some((v) => v !== "")) dataRows.push(row);
       }
 
-      // Auto-guess mapping.
+      // Auto-guess mapping. A header is claimed by the first field that matches it, and
+      // later fields no longer see it — several ministry headers are substrings of one
+      // another (e.g. the PV header ends in "بتاريخ", the issue date's alias), so without
+      // this two fields would guess the same column and one real column would be missed.
       const map: Record<string, string> = {};
       const guess: Record<string, boolean> = {};
+      const taken = new Set<string>();
       for (const f of STUDENT_FIELDS) {
-        const g = guessHeader(f, hdrs);
+        const g = guessHeader(f, hdrs.filter((h) => !taken.has(h)));
+        if (g) taken.add(g);
         map[f.key] = g;
         guess[f.key] = g !== "";
       }

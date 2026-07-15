@@ -84,6 +84,7 @@ model Student {
   centerArabic     String?
   issuePlace       String?
   issueDate        String?
+  pvDate           String? // محضر لجنة المداولات بتاريخ — deliberation-committee minutes date
   serialNumber     String? // pre-printed ministry N° — recorded to match paper to student
   registrationCode String?
 
