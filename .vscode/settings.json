@@ -34,5 +34,6 @@
   // editor rather than letting it reorder around the surrounding code.
   "editor.unicodeHighlight.allowedLocales": {
     "ar": true
-  }
+  },
+  "prisma.pinToPrisma6": true
 }
