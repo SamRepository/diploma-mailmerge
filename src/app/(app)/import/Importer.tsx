@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { STUDENT_FIELDS, guessHeader, type StudentFieldKey } from "@/lib/studentFields";
+import { STUDENT_FIELDS, guessHeader } from "@/lib/studentFields";
 import { importStudents } from "@/lib/students";
 
 type Row = Record<string, string>;
