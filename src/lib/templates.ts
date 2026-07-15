@@ -7,24 +7,44 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { ensureUploadsDir, uploadPath, IMAGE_CONTENT_TYPES } from "@/lib/uploads";
+import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, type UploadState } from "@/lib/uploadLimits";
 
-export async function uploadBackground(formData: FormData): Promise<void> {
+export async function uploadBackground(_prev: UploadState, formData: FormData): Promise<UploadState> {
   await requireAdmin();
   const templateId = String(formData.get("templateId"));
   const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) return;
+
+  if (!(file instanceof File) || file.size === 0) {
+    return { status: "error", message: "Choose an image file first." };
+  }
 
   const ext = path.extname(file.name).toLowerCase();
-  if (!IMAGE_CONTENT_TYPES[ext]) return; // only images
+  if (!IMAGE_CONTENT_TYPES[ext]) {
+    const allowed = Object.keys(IMAGE_CONTENT_TYPES).join(", ");
+    return { status: "error", message: `${file.name} is not a supported image (allowed: ${allowed}).` };
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    const mb = (file.size / 1024 / 1024).toFixed(1);
+    return { status: "error", message: `${file.name} is ${mb} MB — the limit is ${MAX_UPLOAD_MB} MB.` };
+  }
 
-  await ensureUploadsDir();
   const name = `template-${templateId}${ext}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(uploadPath(name), bytes);
+  try {
+    await ensureUploadsDir();
+    const bytes = Buffer.from(await file.arrayBuffer());
+    await fs.writeFile(uploadPath(name), bytes);
+  } catch (err) {
+    // Most likely the uploads volume is missing or read-only in the deployment.
+    console.error("uploadBackground: writing the scan failed", err);
+    return { status: "error", message: "Could not save the file on the server. Check the uploads volume." };
+  }
 
   await prisma.template.update({ where: { id: templateId }, data: { backgroundImagePath: name } });
   revalidatePath(`/templates/${templateId}/calibrate`);
   revalidatePath("/templates");
+
+  const mb = (file.size / 1024 / 1024).toFixed(1);
+  return { status: "ok", message: `Uploaded ${file.name} (${mb} MB).` };
 }
 
 const fieldUpdateSchema = z.object({

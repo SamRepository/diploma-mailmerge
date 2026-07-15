@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
-import { uploadBackground } from "@/lib/templates";
 import { Calibrator, type CalibratorField } from "./Calibrator";
+import { BackgroundUploadForm } from "./BackgroundUploadForm";
 
 export default async function CalibratePage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -46,19 +46,7 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
         </Link>
       </div>
 
-      <form action={uploadBackground} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-4">
-        <input type="hidden" name="templateId" value={template.id} />
-        <label className="text-sm text-slate-600">
-          Background scan (PNG/JPG of the blank diploma, oriented landscape):
-        </label>
-        <input type="file" name="file" accept="image/png,image/jpeg,image/webp" required className="text-sm" />
-        <button type="submit" className="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-900">
-          Upload / replace
-        </button>
-        {!template.backgroundImagePath && (
-          <span className="text-sm text-amber-600">No background yet — upload one to calibrate visually.</span>
-        )}
-      </form>
+      <BackgroundUploadForm templateId={template.id} hasBackground={!!template.backgroundImagePath} />
 
       <Calibrator
         templateId={template.id}
