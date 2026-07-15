@@ -8,8 +8,8 @@ export function Footer() {
         <span aria-hidden className="text-slate-300">|</span>
         <span>
           Contact :{" "}
-          <a href="mailto:s.sllami@enset-skikda.dz" className="text-slate-600 underline hover:text-slate-900">
-            s.sllami@enset-skikda.dz
+          <a href="mailto:s.sellami@enset-skikda.dz" className="text-slate-600 underline hover:text-slate-900">
+            s.sellami@enset-skikda.dz
           </a>
         </span>
       </div>
