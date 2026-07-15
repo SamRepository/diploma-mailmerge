@@ -1,4 +1,10 @@
 {
+  // Owl Intellisense (mvintg.owl-lsp) activates on every JavaScript/TypeScript file and
+  // parses it as an Odoo OWL template, reporting bogus OWL000 "Syntax error in expression"
+  // on code that compiles cleanly (`npm run typecheck`, `npm run lint`, `npm run build` all
+  // pass). Nothing here is Odoo. Off for this workspace only — Odoo projects keep it.
+  "owlLsp.enable": false,
+
   // Use the TypeScript that ships in the repo, so the editor agrees with `npm run typecheck`
   // instead of whatever version VS Code bundles.
   "typescript.tsdk": "node_modules/typescript/lib",
