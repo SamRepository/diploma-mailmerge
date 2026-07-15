@@ -1,0 +1,32 @@
+{
+  // Use the TypeScript that ships in the repo, so the editor agrees with `npm run typecheck`
+  // instead of whatever version VS Code bundles.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // eslint.config.mjs is flat config; `npm run lint` runs `eslint .`.
+  "eslint.useFlatConfig": true,
+
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+
+  // Keep generated output and uploaded scans out of search results and the file watcher.
+  // uploads/ holds multi-MB template scans; .next is build output.
+  "search.exclude": {
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/uploads": true
+  },
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/node_modules/**": true,
+    "**/uploads/**": true
+  },
+
+  // The diploma layout and the ministry's data are bilingual; keep Arabic readable in the
+  // editor rather than letting it reorder around the surrounding code.
+  "editor.unicodeHighlight.allowedLocales": {
+    "ar": true
+  }
+}

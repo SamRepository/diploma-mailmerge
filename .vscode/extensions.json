@@ -1,0 +1,22 @@
+{
+  // Extensions this project actually needs. VS Code offers these when the folder is opened.
+  "recommendations": [
+    // .prisma syntax highlighting, formatting and schema validation.
+    "Prisma.prisma",
+    // Flat-config ESLint, matching `npm run lint`.
+    "dbaeumer.vscode-eslint",
+    // Class completion for the Tailwind utilities used across the UI.
+    "bradlc.vscode-tailwindcss"
+  ],
+  // Odoo/OWL tooling parses this project's .ts files with a grammar meant for the OWL
+  // framework and reports bogus OWL000 "Syntax error in expression" diagnostics — the code
+  // compiles cleanly (`npm run typecheck`, `npm run build`). Nothing here is Odoo. This list
+  // only stops VS Code recommending them; disable them per-workspace to silence the noise:
+  // Extensions -> the extension -> gear -> Disable (Workspace).
+  "unwantedRecommendations": [
+    "mvintg.owl-lsp",
+    "odoo.owl-vision",
+    "trinhanhngoc.vscode-odoo",
+    "mvintg.odoo-file"
+  ]
+}
