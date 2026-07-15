@@ -68,12 +68,23 @@ body {
   .diploma-print-root:not(.with-bg) .diploma-bg {
     display: none !important;
   }
-  /* The on-screen zoom wrapper must not scale the printed physical size. */
-  .diploma-scale-wrap {
+  /* The on-screen zoom wrappers must not scale the printed physical size, and must not act
+     as the containing block for .diploma-print-root — a transformed or positioned ancestor
+     captures its absolute left/top, so the sheet lands wherever the preview sits on screen
+     instead of at the top-left of the paper. The zoom transform sits on .diploma-scale-inner;
+     resetting only the outer wrapper left it applied and the sheet printed scaled down.
+     The print buttons render the chrome-free /print/diploma route instead of this page;
+     these rules keep a manual Ctrl+P from producing a scaled, off-page sheet. */
+  .diploma-scale-wrap,
+  .diploma-scale-inner {
     transform: none !important;
+    position: static !important;
     width: auto !important;
     height: auto !important;
     overflow: visible !important;
+  }
+  .diploma-print-root {
+    box-shadow: none !important;
   }
 }
 

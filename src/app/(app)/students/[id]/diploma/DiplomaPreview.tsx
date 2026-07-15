@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DiplomaSheet, type SheetField } from "@/components/DiplomaSheet";
+import { HelpLink } from "@/components/HelpLink";
 import { setPrintStatus } from "@/lib/students";
 
 const MM_TO_PX = 96 / 25.4;
+const PRINT_FRAME_ID = "diploma-print-frame";
 
 export function DiplomaPreview({
   studentId,
@@ -32,7 +34,7 @@ export function DiplomaPreview({
   const [offY, setOffY] = useState(0);
   const [status, setStatus] = useState(initialStatus);
   const [marking, setMarking] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [printing, setPrinting] = useState(false);
   const offsetKey = `diploma-offset-${templateId}`;
 
   // Offset is a property of the physical printer/paper, so remember it per machine.
@@ -50,11 +52,38 @@ export function DiplomaPreview({
     localStorage.setItem(offsetKey, JSON.stringify({ x: offX, y: offY }));
   }, [offsetKey, offX, offY]);
 
+  // Print the chrome-free /print/diploma route inside a hidden iframe rather than printing
+  // this page. Printing the preview sent the zoom transform to the printer and let the rest
+  // of the page — hidden but still taking up space — push the sheet onto later sheets, so
+  // the output came out blank across several pages. That route is the same one the PDF
+  // export renders, so what prints and what exports cannot drift apart.
   function doPrint(withBg: boolean) {
-    const el = rootRef.current;
-    if (!el) return;
-    el.classList.toggle("with-bg", withBg);
-    setTimeout(() => window.print(), 60);
+    setPrinting(true);
+    document.getElementById(PRINT_FRAME_ID)?.remove();
+
+    const frame = document.createElement("iframe");
+    frame.id = PRINT_FRAME_ID;
+    frame.setAttribute("aria-hidden", "true");
+    frame.style.cssText = "position:fixed;left:-9999px;top:0;width:0;height:0;border:0";
+    frame.src = `/print/diploma/${studentId}?bg=${withBg ? "1" : "0"}&offX=${offX}&offY=${offY}`;
+
+    frame.onload = async () => {
+      const w = frame.contentWindow;
+      if (!w) {
+        setPrinting(false);
+        return;
+      }
+      // Load fires once images are in, but the bundled Arabic font is separate — printing
+      // before it resolves would shape the Arabic with a fallback face.
+      try {
+        await w.document.fonts?.ready;
+      } catch {}
+      w.focus();
+      w.print();
+      setPrinting(false);
+    };
+
+    document.body.appendChild(frame);
   }
 
   async function markPrinted() {
@@ -91,9 +120,10 @@ export function DiplomaPreview({
             style={{ width: scaledW, height: scaledH }}
           >
             <div
+              className="diploma-scale-inner"
               style={{ transform: `scale(${zoom})`, transformOrigin: "top left", position: "absolute", top: 0, left: 0 }}
             >
-              <div ref={rootRef} className={`diploma-print-root ${showBg ? "" : "hide-bg-screen"}`} style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
+              <div className={`diploma-print-root ${showBg ? "" : "hide-bg-screen"}`} style={{ boxShadow: "0 1px 6px rgba(0,0,0,0.15)" }}>
                 <DiplomaSheet
                   id="diploma-print"
                   widthMm={widthMm}
@@ -123,7 +153,8 @@ export function DiplomaPreview({
         <div className="rounded-lg border border-slate-200 bg-white p-3">
           <h3 className="mb-2 font-semibold text-slate-700">Alignment offset (mm)</h3>
           <p className="mb-2 text-xs text-slate-500">
-            Nudge all fields to match your printer. Saved for this computer.
+            Nudge all fields to match your printer. Saved for this computer.{" "}
+            <HelpLink anchor="print-single" className="whitespace-nowrap underline" />
           </p>
           <div className="grid grid-cols-2 gap-2">
             <label className="block">
@@ -146,10 +177,18 @@ export function DiplomaPreview({
 
         <div className="rounded-lg border border-slate-200 bg-white p-3">
           <h3 className="mb-2 font-semibold text-slate-700">Print</h3>
-          <button onClick={() => doPrint(false)} className="mb-2 w-full rounded bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700">
-            🖨 Print onto diploma (data only)
+          <button
+            onClick={() => doPrint(false)}
+            disabled={printing}
+            className="mb-2 w-full rounded bg-indigo-600 px-3 py-2 font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+          >
+            {printing ? "Preparing…" : "🖨 Print onto diploma (data only)"}
           </button>
-          <button onClick={() => doPrint(true)} className="w-full rounded border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-100">
+          <button
+            onClick={() => doPrint(true)}
+            disabled={printing}
+            className="w-full rounded border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-100 disabled:opacity-60"
+          >
             🧪 Test print (with background)
           </button>
           <button
