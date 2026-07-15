@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
 import { CreateUserForm } from "./CreateUserForm";
-import { toggleUserActive, resetPassword } from "./actions";
+import { ResetPasswordForm } from "./ResetPasswordForm";
+import { toggleUserActive } from "./actions";
 
 export default async function UsersPage() {
   const admin = await requireAdmin();
@@ -52,18 +53,7 @@ export default async function UsersPage() {
                         {u.active ? "Disable" : "Enable"}
                       </button>
                     </form>
-                    <form action={resetPassword} className="flex items-center gap-1">
-                      <input type="hidden" name="id" value={u.id} />
-                      <input
-                        name="password"
-                        type="text"
-                        placeholder="new password"
-                        className="w-28 rounded border border-slate-300 px-2 py-1 text-xs"
-                      />
-                      <button type="submit" className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-100">
-                        Reset
-                      </button>
-                    </form>
+                    <ResetPasswordForm userId={u.id} />
                   </div>
                 </td>
               </tr>

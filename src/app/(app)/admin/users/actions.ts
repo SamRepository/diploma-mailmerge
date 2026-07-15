@@ -56,12 +56,18 @@ export async function toggleUserActive(formData: FormData): Promise<void> {
   revalidatePath("/admin/users");
 }
 
-export async function resetPassword(formData: FormData): Promise<void> {
+export async function resetPassword(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
   const id = String(formData.get("id"));
   const password = String(formData.get("password") ?? "");
-  if (password.length < 6) return;
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) return { error: "User not found." };
+
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.update({ where: { id }, data: { passwordHash } });
   revalidatePath("/admin/users");
+  return { success: `Password changed successfully for ${user.name}.` };
 }
