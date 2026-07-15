@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { BatchPrint, type BatchStudent } from "./BatchPrint";
+import { HelpLink } from "@/components/HelpLink";
 
 export default async function BatchPrintPage() {
   await requireUser();
@@ -21,7 +22,10 @@ export default async function BatchPrintPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Bulk print</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-xl font-semibold text-slate-900">Bulk print</h1>
+        <HelpLink anchor="print-batch" className="text-sm" />
+      </div>
       <p className="text-sm text-slate-500">
         Select students, then export a single merged PDF (one A4-landscape page each). Use “data only” to print onto
         the pre-printed diplomas, or “with background” for complete archival copies.

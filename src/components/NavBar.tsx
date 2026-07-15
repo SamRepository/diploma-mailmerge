@@ -7,6 +7,7 @@ const links = [
   { href: "/students", label: "Students" },
   { href: "/import", label: "Import" },
   { href: "/print/batch", label: "Bulk print" },
+  { href: "/help", label: "Help" },
 ];
 
 const adminLinks = [

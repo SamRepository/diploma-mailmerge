@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/session";
 import { resolveFieldValue } from "@/lib/diploma";
 import { Calibrator, type CalibratorField } from "./Calibrator";
 import { BackgroundUploadForm } from "./BackgroundUploadForm";
+import { HelpLink } from "@/components/HelpLink";
 
 export default async function CalibratePage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -48,9 +49,12 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-900">Calibrate — {template.name}</h1>
-        <Link href="/templates" className="text-sm text-slate-500 hover:text-slate-700">
-          ← All templates
-        </Link>
+        <div className="flex items-center gap-3">
+          <HelpLink anchor="calibrate" className="text-sm" />
+          <Link href="/templates" className="text-sm text-slate-500 hover:text-slate-700">
+            ← All templates
+          </Link>
+        </div>
       </div>
 
       <BackgroundUploadForm templateId={template.id} hasBackground={!!template.backgroundImagePath} />
