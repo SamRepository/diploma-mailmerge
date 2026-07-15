@@ -43,10 +43,45 @@ export function formatDiplomaDate(raw: string): string {
   return `${String(y)}/${String(m).padStart(2, "0")}/${String(d).padStart(2, "0")}`;
 }
 
+// Not a Student column: a value composed from several fields. Used by the QR, which encodes
+// a readable summary of the diploma rather than a single value.
+export const SUMMARY_SOURCE = "diplomaSummary";
+
+// Plain-text summary encoded in the QR, mirroring the label order the ministry uses on the
+// licence diploma so a scan reads the same way on both. Dates follow the printed diploma
+// (YYYY/MM/DD) so the scan and the paper agree. Segments with no data are dropped rather
+// than printed with an empty value — "Date of Deliberation:" followed by nothing reads as
+// missing information on an official document.
+export function buildDiplomaSummary(student: Student, degree: string): string {
+  const parts: string[] = [];
+  const push = (label: string, value: string | null | undefined) => {
+    const v = (value ?? "").trim();
+    if (v) parts.push(label ? `${label}: ${v}` : v);
+  };
+
+  push("", student.nameLatin);
+  push("Born on", student.birthDate ? formatDiplomaDate(student.birthDate) : "");
+  push("University", student.centerLatin);
+  push("Branch", student.branchLatin);
+  push("Speciality", student.specialityLatin);
+  push("Date of Deliberation", student.pvDate ? formatDiplomaDate(student.pvDate) : "");
+  push("Num", student.registrationCode);
+  push("Degree", degree);
+
+  return parts.join(" ");
+}
+
 // Resolve the text a field should display for a given student.
 // Fixed-value fields (e.g. "Doctorat") ignore the student.
-export function resolveFieldValue(field: FieldDefinition, student: Student | null): string {
+export function resolveFieldValue(
+  field: FieldDefinition,
+  student: Student | null,
+  ctx?: { degree?: string },
+): string {
   if (field.fixedValue && field.fixedValue.trim() !== "") return field.fixedValue;
+  if (field.source === SUMMARY_SOURCE) {
+    return student ? buildDiplomaSummary(student, ctx?.degree ?? "") : "";
+  }
   if (student && field.source) {
     const v = (student as unknown as Record<string, unknown>)[field.source];
     if (v != null) {
@@ -67,7 +102,7 @@ export function fieldPlaceholder(field: FieldDefinition): string {
 export function buildSheetFields(
   fields: FieldDefinition[],
   student: Student | null,
-  opts?: { includeNonPrintable?: boolean },
+  opts?: { includeNonPrintable?: boolean; degree?: string },
 ): SheetField[] {
   // Removed fields never reach paper, whatever the caller passes in. Callers filter in
   // their queries too; this is the last line of defence on every print path.
@@ -83,6 +118,6 @@ export function buildSheetFields(
     align: (f.align as "left" | "center" | "right") ?? "left",
     direction: (f.direction as "ltr" | "rtl") ?? "ltr",
     kind: (f.kind as "text" | "qr") ?? "text",
-    value: resolveFieldValue(f, student),
+    value: resolveFieldValue(f, student, { degree: opts?.degree }),
   }));
 }

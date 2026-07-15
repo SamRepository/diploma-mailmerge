@@ -27,7 +27,7 @@ export default async function DiplomaPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const fields = await withQrCodes(buildSheetFields(template.fields, student));
+  const fields = await withQrCodes(buildSheetFields(template.fields, student, { degree: template.degreeType }));
 
   return (
     <div className="space-y-4">

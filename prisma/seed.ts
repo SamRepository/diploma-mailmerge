@@ -58,9 +58,10 @@ const phdFields: SeedField[] = [
   // here to position against the pre-printed number when checking alignment, and to keep
   // the recorded serial visible while calibrating. Leave it non-printable.
   { key: "serial_number", source: "serialNumber", label: "Serial N° (pre-printed)", xMm: 235, yMm: 28, widthMm: 40, fontSize: 10, printable: false, order: 24, ...LATIN },
-  // QR square encoding the registration number by default (change its source/fixed value
-  // once the ministry verification format is confirmed). Positioned bottom-left.
-  { key: "qr_registration", source: "registrationCode", label: "QR code", xMm: 20, yMm: 150, widthMm: 22, fontSize: 9, kind: "qr", order: 19, ...LATIN },
+  // QR square. `diplomaSummary` is not a Student column — it is composed in lib/diploma.ts
+  // (SUMMARY_SOURCE) from the Latin fields, mirroring the label order the ministry uses in
+  // the licence diploma's QR, so a scan reads the same on both. Positioned bottom-left.
+  { key: "qr_registration", source: "diplomaSummary", label: "QR code (diploma summary)", xMm: 20, yMm: 150, widthMm: 22, fontSize: 9, kind: "qr", order: 19, ...LATIN },
 ];
 
 async function main() {
@@ -120,6 +121,18 @@ async function main() {
     });
   }
   console.log(`Seeded ${phdFields.length} field definitions.`);
+
+  // The QR used to encode the bare registration number. Existing templates keep their row
+  // (upsert leaves it alone, which is what preserves calibration), so repoint the source
+  // here. Scoped to rows still on the old source, so it is a no-op once applied and never
+  // overrides a source an admin has since changed.
+  const repointed = await prisma.fieldDefinition.updateMany({
+    where: { kind: "qr", source: "registrationCode" },
+    data: { source: "diplomaSummary", label: "QR code (diploma summary)" },
+  });
+  if (repointed.count > 0) {
+    console.log(`Repointed ${repointed.count} QR field(s) from the registration number to the diploma summary.`);
+  }
 }
 
 main()

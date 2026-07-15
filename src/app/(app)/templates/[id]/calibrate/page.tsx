@@ -39,7 +39,7 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
     // Resolve through the same helper the printed sheet uses, so the calibrator shows the
     // value that will actually be printed — dates included. Reading the student property
     // directly here would skip the date formatting and misrepresent the layout.
-    sampleValue: resolveFieldValue(f, sample),
+    sampleValue: resolveFieldValue(f, sample, { degree: template.degreeType }),
   });
 
   const fields = template.fields.filter((f) => !f.removed).map(toCalibratorField);

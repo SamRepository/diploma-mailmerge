@@ -34,7 +34,7 @@ export default async function PrintDiplomaPage({
   if (!template) notFound();
 
   const withBg = bg === "1";
-  const fields = await withQrCodes(buildSheetFields(template.fields, student));
+  const fields = await withQrCodes(buildSheetFields(template.fields, student, { degree: template.degreeType }));
 
   return (
     <div className={`diploma-print-root ${withBg ? "with-bg" : ""}`}>
