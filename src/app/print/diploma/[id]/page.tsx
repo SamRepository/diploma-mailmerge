@@ -29,7 +29,7 @@ export default async function PrintDiplomaPage({
 
   const template = await prisma.template.findFirst({
     where: student.templateId ? { id: student.templateId } : { active: true },
-    include: { fields: { orderBy: { order: "asc" } } },
+    include: { fields: { where: { removed: false }, orderBy: { order: "asc" } } },
   });
   if (!template) notFound();
 

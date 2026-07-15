@@ -57,6 +57,10 @@ model FieldDefinition {
   printable   Boolean  @default(true) // false = pre-printed on the ministry blank, don't print
   fixedValue  String? // constant text (e.g. "Doctorat"); overrides the student value
   order       Int      @default(0)
+  // Removed in the calibrator. A soft flag, not a row delete: the container runs the
+  // idempotent seed on every start, and a deleted row would simply be re-created. Removed
+  // fields never render or print, and are restorable from the calibrator.
+  removed     Boolean  @default(false)
 
   @@unique([templateId, key])
 }

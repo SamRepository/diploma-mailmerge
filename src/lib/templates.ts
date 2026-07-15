@@ -47,9 +47,16 @@ export async function uploadBackground(_prev: UploadState, formData: FormData): 
   return { status: "ok", message: `Uploaded ${file.name} (${mb} MB).` };
 }
 
-export async function deleteFieldDefinition(
+// Remove / restore a field on a template.
+//
+// This flips a `removed` flag rather than deleting the row. The container runs the
+// idempotent seed on every start (docker-entrypoint.sh), which upserts the standard field
+// set — a deleted row would be re-created on the next restart or redeploy, undoing the
+// admin's decision. Keeping the row lets the seed's upsert find it and leave it alone.
+export async function setFieldRemoved(
   templateId: string,
   fieldId: string,
+  removed: boolean,
 ): Promise<{ ok: boolean; error?: string }> {
   await requireAdmin();
   const field = await prisma.fieldDefinition.findUnique({ where: { id: fieldId } });
@@ -57,8 +64,9 @@ export async function deleteFieldDefinition(
     return { ok: false, error: "That field no longer exists." };
   }
 
-  await prisma.fieldDefinition.delete({ where: { id: fieldId } });
+  await prisma.fieldDefinition.update({ where: { id: fieldId }, data: { removed } });
   revalidatePath(`/templates/${templateId}/calibrate`);
+  revalidatePath("/templates");
   return { ok: true };
 }
 

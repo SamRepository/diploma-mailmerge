@@ -12,13 +12,15 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
 
   const template = await prisma.template.findUnique({
     where: { id },
+    // Removed fields are fetched too — they are listed as restorable rather than hidden,
+    // so a field taken off the template can be put back without re-running the seed.
     include: { fields: { orderBy: { order: "asc" } } },
   });
   if (!template) notFound();
 
   const sample = await prisma.student.findFirst({ where: { templateId: id }, orderBy: { createdAt: "asc" } });
 
-  const fields: CalibratorField[] = template.fields.map((f) => ({
+  const toCalibratorField = (f: (typeof template.fields)[number]): CalibratorField => ({
     id: f.id,
     key: f.key,
     label: f.label,
@@ -37,7 +39,10 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
     // value that will actually be printed — dates included. Reading the student property
     // directly here would skip the date formatting and misrepresent the layout.
     sampleValue: resolveFieldValue(f, sample),
-  }));
+  });
+
+  const fields = template.fields.filter((f) => !f.removed).map(toCalibratorField);
+  const removedFields = template.fields.filter((f) => f.removed).map(toCalibratorField);
 
   return (
     <div className="space-y-4">
@@ -56,6 +61,7 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
         pageHeightMm={template.pageHeightMm}
         backgroundUrl={template.backgroundImagePath ? `/api/uploads/${template.backgroundImagePath}` : null}
         initialFields={fields}
+        initialRemovedFields={removedFields}
       />
     </div>
   );

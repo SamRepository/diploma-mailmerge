@@ -69,7 +69,10 @@ export function buildSheetFields(
   student: Student | null,
   opts?: { includeNonPrintable?: boolean },
 ): SheetField[] {
-  const list = opts?.includeNonPrintable ? fields : fields.filter((f) => f.printable);
+  // Removed fields never reach paper, whatever the caller passes in. Callers filter in
+  // their queries too; this is the last line of defence on every print path.
+  const live = fields.filter((f) => !f.removed);
+  const list = opts?.includeNonPrintable ? live : live.filter((f) => f.printable);
   return list.map((f) => ({
     id: f.id,
     xMm: f.xMm,

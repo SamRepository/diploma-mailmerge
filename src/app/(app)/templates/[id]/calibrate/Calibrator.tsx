@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { saveFieldPositions, deleteFieldDefinition } from "@/lib/templates";
+import { saveFieldPositions, setFieldRemoved } from "@/lib/templates";
 
 const PT_TO_MM = 25.4 / 72;
 
@@ -29,14 +29,17 @@ export function Calibrator({
   pageHeightMm,
   backgroundUrl,
   initialFields,
+  initialRemovedFields = [],
 }: {
   templateId: string;
   pageWidthMm: number;
   pageHeightMm: number;
   backgroundUrl: string | null;
   initialFields: CalibratorField[];
+  initialRemovedFields?: CalibratorField[];
 }) {
   const [fields, setFields] = useState<CalibratorField[]>(initialFields);
+  const [removedFields, setRemovedFields] = useState<CalibratorField[]>(initialRemovedFields);
   const [selectedId, setSelectedId] = useState<string | null>(initialFields[0]?.id ?? null);
   const [zoom, setZoom] = useState(1);
   const [showBg, setShowBg] = useState(true);
@@ -93,14 +96,14 @@ export function Calibrator({
   const removeSelected = useCallback(async () => {
     const target = fields.find((f) => f.id === selectedId);
     if (!target) return;
-    if (!window.confirm(`Delete the field “${target.label}”?\n\nThis removes it from the template permanently. Re-run the seed to restore the standard fields.`)) {
+    if (!window.confirm(`Remove the field “${target.label}” from this template?\n\nIt stops rendering and printing straight away, and stays removed across restarts. You can put it back from “Removed fields”.`)) {
       return;
     }
 
     setDeleteError(null);
-    const res = await deleteFieldDefinition(templateId, target.id);
+    const res = await setFieldRemoved(templateId, target.id, true);
     if (!res.ok) {
-      setDeleteError(res.error ?? "Could not delete that field.");
+      setDeleteError(res.error ?? "Could not remove that field.");
       return;
     }
     setFields((prev) => {
@@ -108,7 +111,23 @@ export function Calibrator({
       setSelectedId(next[0]?.id ?? null);
       return next;
     });
+    setRemovedFields((prev) => [...prev, target]);
   }, [fields, selectedId, templateId]);
+
+  const restoreField = useCallback(
+    async (target: CalibratorField) => {
+      setDeleteError(null);
+      const res = await setFieldRemoved(templateId, target.id, false);
+      if (!res.ok) {
+        setDeleteError(res.error ?? "Could not restore that field.");
+        return;
+      }
+      setRemovedFields((prev) => prev.filter((f) => f.id !== target.id));
+      setFields((prev) => [...prev, target]);
+      setSelectedId(target.id);
+    },
+    [templateId],
+  );
 
   // Del / Backspace removes the selected field. Ignored while a form control has focus,
   // so editing the fixed-value or a number input never deletes the field being edited.
@@ -211,7 +230,8 @@ export function Calibrator({
         </div>
         <p className="text-xs text-slate-500">
           Drag a field to position it. Press <kbd className="rounded border border-slate-300 bg-slate-50 px-1">Del</kbd> to
-          remove the selected field. Boxes at 50% opacity are marked non-printable (pre-printed on the paper).
+          remove the selected field — removal applies immediately and survives restarts; restore it from “Removed
+          fields”. Boxes at 50% opacity are marked non-printable (pre-printed on the paper).
           Sample text is from the first imported student.
         </p>
         {deleteError && (
@@ -239,6 +259,29 @@ export function Calibrator({
             ))}
           </div>
         </div>
+
+        {removedFields.length > 0 && (
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <h3 className="mb-1 text-sm font-semibold text-slate-700">Removed fields</h3>
+            <p className="mb-2 text-xs text-slate-500">
+              Not rendered and not printed. They stay removed across restarts and re-seeds.
+            </p>
+            <div className="max-h-40 space-y-1 overflow-auto">
+              {removedFields.map((f) => (
+                <div key={f.id} className="flex items-center justify-between gap-2 rounded px-2 py-1 text-sm text-slate-500">
+                  <span className="truncate line-through">{f.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => void restoreField(f)}
+                    className="shrink-0 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-50"
+                  >
+                    Restore
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {selected && (
           <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm">
@@ -296,7 +339,7 @@ export function Calibrator({
               onClick={() => void removeSelected()}
               className="mt-3 w-full rounded border border-red-300 px-2 py-1 text-sm text-red-700 hover:bg-red-50"
             >
-              Delete field (Del)
+              Remove field (Del)
             </button>
           </div>
         )}

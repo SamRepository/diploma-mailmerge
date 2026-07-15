@@ -6,7 +6,7 @@ export default async function TemplatesPage() {
   await requireAdmin();
   const templates = await prisma.template.findMany({
     orderBy: { createdAt: "asc" },
-    include: { _count: { select: { fields: true, students: true } } },
+    include: { _count: { select: { fields: { where: { removed: false } }, students: true } } },
   });
 
   return (
