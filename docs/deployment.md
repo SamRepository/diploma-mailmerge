@@ -41,6 +41,7 @@ This holds `app.db` and uploaded template scans (`/data/uploads`). Without it, d
 | `DATABASE_URL` | `file:/data/app.db` | SQLite on the volume |
 | `AUTH_SECRET` | *(random 32+ chars)* | `openssl rand -base64 32` |
 | `AUTH_TRUST_HOST` | `true` | behind Coolify's proxy |
+| `AUTH_URL` | *(the app's public URL, with port)* | e.g. `https://diploma.panel.enset-skikda.dz:8000` — see below |
 | `UPLOADS_DIR` | `/data/uploads` | uploaded scans on the volume |
 | `PDF_RENDER_BASE_URL` | `http://127.0.0.1:3000` | in-container PDF rendering |
 | `ADMIN_EMAIL` | *(your email)* | first admin, created by seed |
@@ -49,6 +50,23 @@ This holds `app.db` and uploaded template scans (`/data/uploads`). Without it, d
 | `NODE_ENV` | `production` | (already set in the image) |
 
 `PORT`, `HOSTNAME`, and `PDF_RENDER_BASE_URL` are baked into the image but can be overridden.
+
+### `AUTH_URL` and the sign-out redirect
+
+Auth.js derives its sign-in/callback/sign-out URLs from the app's origin. Set `AUTH_URL` to
+the full public URL **including the port** and with **no trailing slash**. If it is wrong,
+users are bounced to that wrong origin on sign-out — a stray `AUTH_URL=https://localhost:3000`
+sends them to `https://localhost:3000/login`.
+
+Verify the deployed origin at any time — this endpoint is public and must echo the real host:
+
+```bash
+curl -s https://<your-app-url>/api/auth/providers
+# "callbackUrl": "https://<your-app-url>/api/auth/callback/credentials"
+```
+
+Auto-detection via `AUTH_TRUST_HOST` alone is not sufficient here: the proxy's forwarded-host
+header drops the non-standard `:8000`, so the origin resolves without the port.
 
 ## 5. Deploy
 
