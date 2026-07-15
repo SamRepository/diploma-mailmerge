@@ -4,10 +4,12 @@ FROM mcr.microsoft.com/playwright:v1.61.1-jammy
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install dependencies (dev deps needed for the build).
+# Install dependencies. --include=dev forces devDependencies even when the platform
+# (e.g. Coolify) injects NODE_ENV=production at build time — the build needs tailwindcss,
+# typescript, prisma CLI, etc. The runtime seed also uses tsx from devDependencies.
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci
+RUN npm ci --include=dev
 
 # Build the app.
 COPY . .
