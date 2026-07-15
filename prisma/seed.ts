@@ -54,6 +54,10 @@ const phdFields: SeedField[] = [
   // محضر لجنة المداولات بتاريخ — deliberation-committee minutes date.
   { key: "pv_date_latin", source: "pvDate", label: "PV date (Latin)", xMm: 150, yMm: 152, widthMm: 40, fontSize: 10, order: 22, ...LATIN },
   { key: "pv_date_ar", source: "pvDate", label: "PV date (Arabic)", xMm: 175, yMm: 152, widthMm: 32, fontSize: 10, order: 23, ...ARABIC },
+  // The ministry blank already carries its own serial N°, so this is NOT printed: it is
+  // here to position against the pre-printed number when checking alignment, and to keep
+  // the recorded serial visible while calibrating. Leave it non-printable.
+  { key: "serial_number", source: "serialNumber", label: "Serial N° (pre-printed)", xMm: 235, yMm: 28, widthMm: 40, fontSize: 10, printable: false, order: 24, ...LATIN },
   // QR square encoding the registration number by default (change its source/fixed value
   // once the ministry verification format is confirmed). Positioned bottom-left.
   { key: "qr_registration", source: "registrationCode", label: "QR code", xMm: 20, yMm: 150, widthMm: 22, fontSize: 9, kind: "qr", order: 19, ...LATIN },

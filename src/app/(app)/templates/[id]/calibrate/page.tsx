@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/session";
+import { resolveFieldValue } from "@/lib/diploma";
 import { Calibrator, type CalibratorField } from "./Calibrator";
 import { BackgroundUploadForm } from "./BackgroundUploadForm";
 
@@ -32,9 +33,10 @@ export default async function CalibratePage({ params }: { params: Promise<{ id: 
     direction: f.direction as "ltr" | "rtl",
     printable: f.printable,
     fixedValue: f.fixedValue,
-    sampleValue: sample
-      ? f.fixedValue ?? (f.source ? String((sample as unknown as Record<string, unknown>)[f.source] ?? "") : "")
-      : f.fixedValue ?? "",
+    // Resolve through the same helper the printed sheet uses, so the calibrator shows the
+    // value that will actually be printed — dates included. Reading the student property
+    // directly here would skip the date formatting and misrepresent the layout.
+    sampleValue: resolveFieldValue(f, sample),
   }));
 
   return (
