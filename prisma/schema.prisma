@@ -1,0 +1,109 @@
+// Prisma schema for the diploma mail-merge app.
+// SQLite does not support native enums; string fields carry their allowed values in comments
+// and are validated at the application layer with zod.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         String     @default("STAFF") // ADMIN | STAFF
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  auditLogs    AuditLog[]
+}
+
+model Template {
+  id                  String            @id @default(cuid())
+  name                String
+  degreeType          String // e.g. "Doctorat"
+  pageWidthMm         Float             @default(297) // A4 landscape
+  pageHeightMm        Float             @default(210)
+  backgroundImagePath String? // path under /data/uploads (served via /api/uploads)
+  active              Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  fields              FieldDefinition[]
+  students            Student[]
+}
+
+// A positioned, styled field on a template. Coordinates are in MILLIMETRES from the
+// top-left of the page. This is the single source of truth for placement.
+model FieldDefinition {
+  id          String   @id @default(cuid())
+  templateId  String
+  template    Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  key         String // unique placement id on this template, e.g. "name_latin"
+  source      String? // which Student property supplies the value, e.g. "nameLatin"; null when fixedValue is used
+  kind        String   @default("text") // text | qr  (qr encodes the resolved value as a QR square of widthMm)
+  label       String // human label shown in the calibrator
+  lang        String   @default("LATIN") // LATIN | ARABIC
+  xMm         Float    @default(0)
+  yMm         Float    @default(0)
+  widthMm     Float    @default(80)
+  fontSize    Float    @default(11) // points
+  fontFamily  String   @default("serif") // "serif" | "arabic"
+  align       String   @default("left") // left | center | right
+  direction   String   @default("ltr") // ltr | rtl
+  rotationDeg Float     @default(0)
+  printable   Boolean  @default(true) // false = pre-printed on the ministry blank, don't print
+  fixedValue  String? // constant text (e.g. "Doctorat"); overrides the student value
+  order       Int      @default(0)
+
+  @@unique([templateId, key])
+}
+
+model Student {
+  id         String    @id @default(cuid())
+  templateId String?
+  template   Template? @relation(fields: [templateId], references: [id])
+
+  // Bilingual fields mirror the diploma layout (Latin / Arabic pairs).
+  nameLatin        String
+  nameArabic       String?
+  birthDate        String? // kept as text to preserve the printed format (e.g. 30/08/1985)
+  birthPlaceLatin  String?
+  birthPlaceArabic String?
+  domainLatin      String?
+  domainArabic     String?
+  branchLatin      String?
+  branchArabic     String?
+  specialityLatin  String?
+  specialityArabic String?
+  gradeLatin       String?
+  gradeArabic      String?
+  centerLatin      String?
+  centerArabic     String?
+  issuePlace       String?
+  issueDate        String?
+  serialNumber     String? // pre-printed ministry N° — recorded to match paper to student
+  registrationCode String?
+
+  printStatus String    @default("PENDING") // PENDING | PRINTED
+  printedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  auditLogs AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  studentId String?
+  student   Student? @relation(fields: [studentId], references: [id])
+  action    String // e.g. "STUDENT_CREATE", "PRINT", "OFFSET_ADJUST"
+  detail    String?
+  offsetX   Float?
+  offsetY   Float?
+  createdAt DateTime @default(now())
+}
