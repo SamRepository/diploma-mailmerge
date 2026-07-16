@@ -61,7 +61,7 @@ const phdFields: SeedField[] = [
   // Signatory title in the signature area. Constant for every PhD diploma, so it carries a
   // fixedValue and no student source. Edit the exact title in the calibrator's Fixed value
   // box; if this text is already pre-printed on the ministry blank, uncheck Printable.
-  { key: "signatory_ar", source: null, fixedValue: "إمضاء مدير الجامعة", label: "Signature title (Arabic)", xMm: 205, yMm: 165, widthMm: 70, fontSize: 11, order: 25, ...ARABIC },
+  { key: "signatory_ar", source: null, fixedValue: "المدير المساعد لما بعد التدرج و البحث العلمي", label: "Signature title (Arabic)", xMm: 205, yMm: 165, widthMm: 70, fontSize: 11, order: 25, ...ARABIC },
   // QR square. `diplomaSummary` is not a Student column — it is composed in lib/diploma.ts
   // (SUMMARY_SOURCE) from the Latin fields, mirroring the label order the ministry uses in
   // the licence diploma's QR, so a scan reads the same on both. Positioned bottom-left.
