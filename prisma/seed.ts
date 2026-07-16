@@ -48,7 +48,7 @@ const phdFields: SeedField[] = [
   { key: "registration_code", source: "registrationCode", label: "Registration code", xMm: 30, yMm: 175, widthMm: 80, fontSize: 9, order: 17, ...LATIN },
   // Issued-at city. Constant for every PhD diploma, so it carries a fixedValue and has no
   // student source. Edit it in the calibrator if the issuing town ever changes.
-  { key: "issue_place_ar", source: null, fixedValue: "عزابة", label: "Issued at (Arabic)", xMm: 210, yMm: 145, widthMm: 30, fontSize: 10, order: 20, ...ARABIC },
+  { key: "issue_place_ar", source: null, fixedValue: "سكيكدة", label: "Issued at (Arabic)", xMm: 210, yMm: 145, widthMm: 30, fontSize: 10, order: 20, ...ARABIC },
   // Issue date on the Arabic side, pairing the existing Latin issue_date.
   { key: "issue_date_ar", source: "issueDate", label: "Issue date (Arabic)", xMm: 175, yMm: 145, widthMm: 32, fontSize: 10, order: 21, ...ARABIC },
   // محضر لجنة المداولات بتاريخ — deliberation-committee minutes date.
