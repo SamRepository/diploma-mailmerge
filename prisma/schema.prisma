@@ -89,6 +89,7 @@ model Student {
   issuePlace       String?
   issueDate        String?
   pvDate           String? // محضر لجنة المداولات بتاريخ — deliberation-committee minutes date
+  matricule        String? // long registration/matricule number, e.g. 221436020844
   serialNumber     String? // pre-printed ministry N° — recorded to match paper to student
   registrationCode String?
 

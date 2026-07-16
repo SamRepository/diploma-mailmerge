@@ -32,6 +32,7 @@ const studentSchema = z.object({
   issuePlace: optionalStr,
   issueDate: optionalStr,
   pvDate: optionalStr,
+  matricule: optionalStr,
   serialNumber: optionalStr,
   registrationCode: optionalStr,
 });

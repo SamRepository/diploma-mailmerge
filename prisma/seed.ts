@@ -54,10 +54,12 @@ const phdFields: SeedField[] = [
   // محضر لجنة المداولات بتاريخ — deliberation-committee minutes date.
   { key: "pv_date_latin", source: "pvDate", label: "PV date (Latin)", xMm: 150, yMm: 152, widthMm: 40, fontSize: 10, order: 22, ...LATIN },
   { key: "pv_date_ar", source: "pvDate", label: "PV date (Arabic)", xMm: 175, yMm: 152, widthMm: 32, fontSize: 10, order: 23, ...ARABIC },
-  // The ministry blank already carries its own serial N°, so this is NOT printed: it is
-  // here to position against the pre-printed number when checking alignment, and to keep
-  // the recorded serial visible while calibrating. Leave it non-printable.
-  { key: "serial_number", source: "serialNumber", label: "Serial N° (pre-printed)", xMm: 235, yMm: 28, widthMm: 40, fontSize: 10, printable: false, order: 24, ...LATIN },
+  // Formatted registration serial, printed. The fixedValue is a pattern: the literal parts
+  // (institution code, year, degree code) are edited in the calibrator, and {matricule} /
+  // {registrationCode} are filled from each student. Edit the year and codes here without a
+  // code change. The ministry's own pre-printed serial N° still lives in the serialNumber
+  // column and imports as before; it just no longer has its own field.
+  { key: "serial_number", source: null, fixedValue: "DEN2101/2026/{matricule}/DOC/{registrationCode}", label: "Registration N° (formatted)", xMm: 200, yMm: 28, widthMm: 90, fontSize: 10, printable: true, order: 24, ...LATIN },
   // Signatory title in the signature area. Constant for every PhD diploma, so it carries a
   // fixedValue and no student source. Edit the exact title in the calibrator's Fixed value
   // box; if this text is already pre-printed on the ministry blank, uncheck Printable.

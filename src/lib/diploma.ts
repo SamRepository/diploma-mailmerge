@@ -71,14 +71,33 @@ export function buildDiplomaSummary(student: Student, degree: string): string {
   return parts.join(" ");
 }
 
+// Fill {placeholder} tokens in a fixed value from the student's fields, so a fixed value can
+// be a pattern like "DEN2101/2026/{matricule}/DOC/{registrationCode}". The literal parts
+// (institution code, year, degree code) are edited in the calibrator; the {tokens} name a
+// Student column and are substituted per student, with date columns formatted. A token whose
+// column is empty or unknown becomes "" — the surrounding separators still print, so the
+// admin can see a value is missing rather than the pattern silently collapsing.
+function interpolateTemplate(template: string, student: Student): string {
+  return template.replace(/\{(\w+)\}/g, (_m, key: string) => {
+    const v = (student as unknown as Record<string, unknown>)[key];
+    if (v == null) return "";
+    const text = String(v);
+    return DATE_SOURCES.has(key) ? formatDiplomaDate(text) : text;
+  });
+}
+
 // Resolve the text a field should display for a given student.
-// Fixed-value fields (e.g. "Doctorat") ignore the student.
+// Fixed-value fields (e.g. "Doctorat") ignore the student, unless the fixed value contains
+// {tokens}, in which case it is treated as a per-student pattern.
 export function resolveFieldValue(
   field: FieldDefinition,
   student: Student | null,
   ctx?: { degree?: string },
 ): string {
-  if (field.fixedValue && field.fixedValue.trim() !== "") return field.fixedValue;
+  const fixed = field.fixedValue?.trim();
+  if (fixed) {
+    return student && fixed.includes("{") ? interpolateTemplate(fixed, student) : fixed;
+  }
   if (field.source === SUMMARY_SOURCE) {
     return student ? buildDiplomaSummary(student, ctx?.degree ?? "") : "";
   }

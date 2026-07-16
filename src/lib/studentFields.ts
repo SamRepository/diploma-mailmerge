@@ -20,6 +20,7 @@ export type StudentFieldKey =
   | "issuePlace"
   | "issueDate"
   | "pvDate"
+  | "matricule"
   | "serialNumber"
   | "registrationCode";
 
@@ -60,6 +61,11 @@ export const STUDENT_FIELDS: StudentFieldDef[] = [
   // column in some exports; it does not contain "بتاريخ", so it cannot collide with issueDate.
   { key: "pvDate", label: "PV date", arabic: false, required: false, group: "Issuance", aliases: ["محضر لجنة المداولات بتاريخ", "محضر لجنة المداولات", "محضر", "تاريخ المناقشة", "pv date", "proces verbal", "procès-verbal", "deliberation"] },
   { key: "issueDate", label: "Issue date", arabic: false, required: false, group: "Issuance", aliases: ["بتاريخ", "issue date", "date de delivrance", "delivered"] },
+  // Long registration/matricule number. Its aliases stay clear of registrationCode's
+  // ("تحت رقم", "registration", "reference") so the dedup mapper does not hand both fields
+  // the same column. If the ministry header is none of these, map it by hand on the Import
+  // screen — the value only needs to reach the matricule column.
+  { key: "matricule", label: "Matricule (long N°)", arabic: false, required: false, group: "Issuance", aliases: ["رقم التسجيل", "matricule", "nin"] },
   { key: "serialNumber", label: "Serial N° (pre-printed)", arabic: false, required: false, group: "Issuance", aliases: ["serial", "n°", "numero"] },
   { key: "registrationCode", label: "Registration N° (printed)", arabic: false, required: false, group: "Issuance", aliases: ["تحت رقم", "registration", "matricule", "reference"] },
 ];
